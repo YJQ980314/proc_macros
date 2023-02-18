@@ -25,6 +25,34 @@ JSON Schema 转化为Rust的struct
 # … ## 行语句（[Line Statements](http://jinja.pocoo.org/docs/dev/templates/#line-statements)）
 ```
 
+### 转义
+简单的使用单引号进行转义
+
+对于较大的段落，使用raw进行转义
+```
+{% raw %}
+     <ul>
+     {% for item in seq %}
+         <li>{{ item }}</li>
+     {% endfor %}
+     </ul>
+{% endraw %}
+```
+包含 > 、 < 、 & 或 " 字符的变量，必须要手动转义, 使用e 顾虑器可以转义这些。
+```
+{{ user.username | e }} 
+```
+
+### 空白控制
+在开始或结束放置一个减号（ - ），可以移除块前或块后的空白。
+```
+{% for item in seq -%}
+    {{ item }}
+{%- endfor %}
+
+{%- if foo -%}...{% endif %}
+```
+
 ### Variables（变量）
 除了普通的字符串变量，Jinja2还支持列表、字典和对象，你可以这样获取变量值：
 ```
@@ -39,6 +67,7 @@ JSON Schema 转化为Rust的struct
 {{ foo['bar'] }}
 ```
 这两种方法基本相同（深层次的区别可以暂不考虑）
+如果变量或属性不存在，会返回一个未定义值。
 
 ### Filter 过滤器()
 一个filter过滤器的本质就是一个function函数。使用格式为：变量名 | 函数。 它做到的就是，把变量传给函数，然后再把函数返回值作为这个代码块的值。
@@ -159,6 +188,16 @@ Ha, you are 42!
 {% endfor %}
 </dl>
 ```
+### 条件过滤
+
+```
+{% for dir in data_dirs if dir != "/" %}
+data_dir = {{ dir }}
+{% else %}
+# no data dirs found
+{% endfor %}
+```
+
 #### 循环索引
 
 loop.index: 循环当前迭代(从1开始)。
@@ -217,4 +256,6 @@ statements: 可以用来创建条件和循环等等
 ```
 我们同样可以发现在Ansible Facts中有很多可用的Ansible变量。
 
-转载自[知乎用户@王奥](https://www.zhihu.com/people/wsgzao)
+参考：
+https://ansible.leops.cn/basic/Jinja2/
+[知乎用户@王奥](https://www.zhihu.com/people/wsgzao)
