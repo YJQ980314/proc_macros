@@ -9,6 +9,15 @@
         "lastName": {
             "type": "string",
             "description": "last name"
+        },
+        "skill": {
+            "type": "object",
+            "title": "skill", 
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
         }
     }
 }

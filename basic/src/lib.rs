@@ -11,5 +11,8 @@ pub fn sql(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn generate(input: TokenStream) -> TokenStream {
     println!("{:#?}", input);
+    // let structs = todo!();
+    // let result = structs.render();
+    // result.parse().unwrap()
     TokenStream::default()
 }

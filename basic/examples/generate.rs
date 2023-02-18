@@ -14,6 +14,7 @@ struct Schema {
 use std::collections::HashMap;
 
 // use generated::*;
+
 use serde::{Serialize, Deserialize};
 
 fn main(){
