@@ -149,8 +149,8 @@ mod tests {
     #[test]
     fn schema_with_nested_boject_should_be_converted_to_st() {
         let schema: Schema = serde_json::from_str(PERSON2).unwrap();
-        let mut structs = schema.into_vec_st();
-        assert_eq!(structs.len(), 2);
+        let mut _structs = schema.into_vec_st();
+        assert_eq!(_structs.len(), 2);
     }
 
     #[test]
