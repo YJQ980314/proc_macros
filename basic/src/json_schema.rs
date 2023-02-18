@@ -2,13 +2,27 @@ use askama::Template;
 use heck::{AsPascalCase, AsSnakeCase};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use proc_macro::{TokenStream, TokenTree};
+use litrs::Literal;
+
+pub fn get_string_literal(input: TokenStream) -> Result<String> {
+    input
+        .into_iter().next()
+        .and_then(|v| Literal::try_from(v).ok())
+        .and_then(|v| match v {
+        Literal::String(s) => Some(s.value().to_string()),
+        _ => None,
+    })
+    .ok_or_else(|| anyhow!("Only string literals are allowed"))
+}
 
 #[derive(Template)]
 #[template(path = "code.j2")]
 pub struct StructsTemplate {
-    structs: Vec<St>,   
+    structs: Vec<St>,
 }
+
 
 impl StructsTemplate {
     fn try_new(filename: &str) -> Result<Self> {
