@@ -3,7 +3,7 @@ use heck::{AsPascalCase, AsSnakeCase};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs};
 use anyhow::{anyhow, Result};
-use proc_macro::{TokenStream, TokenTree};
+use proc_macro::TokenStream;
 use litrs::Literal;
 
 pub fn get_string_literal(input: TokenStream) -> Result<String> {
@@ -17,13 +17,18 @@ pub fn get_string_literal(input: TokenStream) -> Result<String> {
     .ok_or_else(|| anyhow!("Only string literals are allowed"))
 }
 
+// Askama 实现了一个基于Jinja的模板渲染引擎。它在编译时根据用户定义的结构从您的模板生成Rust代码以保存模板的上下文。
 #[derive(Template)]
 #[template(path = "code.j2")]
 pub struct StructsTemplate {
     structs: Vec<St>,
 }
 
+// Serde_JSON提供了高效、灵活、安全的方式来在这些表示之间转换数据。
+// from_str从JSON文本字符串反序列化T类型的实例。
 
+// Error类型，一个动态错误类型的包装器。Error很像Box<dyn std::error::Error>
+// anyhow::Result<T>等价于std::result::Result<T, anyhow::Error>
 impl StructsTemplate {
     fn try_new(filename: &str) -> Result<Self> {
         let content = fs::read_to_string(filename)?;
@@ -32,7 +37,7 @@ impl StructsTemplate {
             structs: schema.into_vec_st(),
         })
     }
-
+    // render分配新字符串并呈现到其中的辅助方法
     pub fn render(filename: &str) -> Result<String>{
         let template = Self::try_new(filename)?;
         Ok(template.render()?)
