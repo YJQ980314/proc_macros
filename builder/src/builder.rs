@@ -34,25 +34,25 @@ impl BuilderContext {
         //  builder name: {} Builder, e.g. CommandBuilder
         let builder_name = "CommandBuilder";
         // optional fields. e.g. executable: String -> executable: Option<String>,
-        let optionized_fields = vec![];
+        let optionized_fields = todo!();
         // methods: fn executable(mut self, v: String) -> Self {self.executable = Some(v); self}
         // Command::builder().executable("hello").arggs(vec![]).envs(vec![]).finish()
         let methods = vec![];
         // assign Builder fields back to original struct fields
         // field_name: self.#field_name.take().Ok_or_else("xxx need to be set!")
-        let assigns = vec![];
+        let assigns = todo!();
         let ast = quote!{
             /// Builder Structure
-            #[derive(Debug, default)]
+            #[derive(Debug, Default)]
             struct #builder_name {
-                #(#optionized_fields, )*
+                #(#optionized_fields,)*
             }
 
             impl #builder_name {
                 #(#methods)*
             }
 
-            pub fn finish(mut self) -> Result<#name, &'static str'> {
+            pub fn finish(mut self) -> Result<#name, &'static str> {
                 Ok(#name {
                     #(#assigns,)*
                 })
@@ -65,6 +65,14 @@ impl BuilderContext {
             }
         };
 
-        
+        ast.into()
+    }
+
+    fn gen_optionized_fields(&self) -> impl Iterator<Item = TokenStream> {
+        self.fields.iter().map(|f|{
+            let ty = &f.ty;
+            let name = &f.ident;
+            quote!{#name: std::option::Option<#ty>}
+        })
     }
 }
