@@ -1,20 +1,35 @@
-use std::iter::Map;
-
+use std::{iter::Map, slice::Iter};
 // 先定义好数据结构
-use quote::quote;
-
 use proc_macro2::{Ident, TokenStream};
+use quote::quote;
 use syn::{
-    punctuated::{Iter, Punctuated},
-    token::Comma,
-    Data, DataStruct, DeriveInput, Field, Fields, FieldsNamed, Path, Type, TypePath, GenericArgument,
+    Data, DataStruct, DeriveInput, Fields, FieldsNamed, GenericArgument, Path, Type,
+    TypePath,
 };
 
-type TokenStreamIter<'a> = Map<Iter<'a, Field>, fn(&'a Field) -> TokenStream>;
+use darling::FromField;
+
+type TokenStreamIter<'a> = Map<Iter<'a, Fd>, fn(&'a Fd) -> TokenStream>;
+
+#[derive(Debug, Default, FromField)]
+#[darling(default, attributes(builder))]
+pub struct Opts {
+    each: Option<String>,
+    default: Option<String>,
+}
+
+struct Fd {
+    name: Ident,
+    ty: Type,
+    opts: Opts,
+}
+
 pub struct BuilderContext {
     name: Ident,
-    fields: Punctuated<Field, Comma>,
+    // fields: Punctuated<Field, Comma>,
+    fields: Vec<Fd>,
 }
+
 impl BuilderContext {
     pub fn new(input: DeriveInput) -> Self {
         let name = input.ident;
@@ -29,7 +44,15 @@ impl BuilderContext {
             panic!("Unsupported data type");
         };
 
-        Self { name, fields }
+        let fds = fields
+            .into_iter()
+            .map(|f| Fd {
+                opts: Opts::from_field(&f).unwrap_or_default(),
+                name: f.ident.unwrap(),
+                ty: f.ty,
+            })
+            .collect();
+        Self { name, fields: fds }
     }
 
     pub fn generate(&self) -> TokenStream {
@@ -73,8 +96,10 @@ impl BuilderContext {
 
     fn gen_optionized_fields<'a>(&'a self) -> TokenStreamIter {
         self.fields.iter().map(|f| {
+            // let opts = Opts::from_field(f).unwrap_or_default();
+            // println!("{:#?}", opts);
             let (_, ty) = get_option_inner(&f.ty);
-            let name = &f.ident;
+            let name = &f.name;
             quote! {#name: std::option::Option<#ty>}
         })
     }
@@ -82,7 +107,23 @@ impl BuilderContext {
     fn get_methods(&self) -> TokenStreamIter {
         self.fields.iter().map(|f| {
             let (_, ty) = get_option_inner(&f.ty);
-            let name = &f.ident;
+            let (is_vec, vec_inner_ty) = get_vec_inner(&f.ty);
+            let name = &f.name;
+
+            if is_vec {
+                if let Some(each_name) = f.opts.each.as_deref() {
+                    let each_name = Ident::new(each_name, f.name.span());
+                    return quote!{
+                        pub fn #each_name(mut self, v: impl Into<#vec_inner_ty>) -> Self {
+                            let mut data = self.#name.take().unwrap_or_default();
+                            data.push(v.into());
+                            self.#name = Some(data);
+                            self
+                        }
+                    };
+                }
+            }
+
             quote! {
                 // fn executable(mut self, v: String) -> Self {self.executable = Some(v); self}
                 pub fn #name(mut self, v: impl Into<#ty>) -> Self {
@@ -92,12 +133,13 @@ impl BuilderContext {
             }
         })
     }
+
     fn gen_assigns(&self) -> TokenStreamIter {
         self.fields.iter().map(|f| {
-            let name = &f.ident;
+            let name = &f.name;
             let (optional, _) = get_option_inner(&f.ty);
             // field_name: self.#field_name.take().Ok_or("xxx need to be set!")
-            
+
             // if is_optional(&f.ty) {}
             if optional {
                 quote! {
@@ -113,13 +155,22 @@ impl BuilderContext {
 }
 
 fn get_option_inner(ty: &Type) -> (bool, &Type) {
+    get_type_inner(ty, "Option")
+}
+
+fn get_vec_inner(ty: &Type) -> (bool, &Type) {
+    get_type_inner(ty, "Vec")
+}
+
+
+fn get_type_inner<'a>(ty: &'a Type, name: &str) -> (bool, &'a Type) {
     if let Type::Path(TypePath {
         path: Path { segments, .. },
         ..
     }) = ty
     {
         if let Some(v) = segments.iter().next() {
-            if v.ident == "Option" {
+            if v.ident == name {
                 let t = match &v.arguments {
                     syn::PathArguments::AngleBracketed(a) => match a.args.iter().next() {
                         Some(GenericArgument::Type(t)) => t,
