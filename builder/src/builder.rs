@@ -124,6 +124,13 @@ impl BuilderContext {
                 }
             }
 
+            if let Some(default) = f.opts.default.as_ref() {
+                let ast: TokenStream = default.parse().unwrap();
+                return quote!{
+                    #name: self.#name.take().unwrap_or_else(|| #ast)
+                };
+            }
+
             quote! {
                 // fn executable(mut self, v: String) -> Self {self.executable = Some(v); self}
                 pub fn #name(mut self, v: impl Into<#ty>) -> Self {

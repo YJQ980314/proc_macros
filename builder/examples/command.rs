@@ -6,7 +6,7 @@ pub struct Command {
     executable: String,
     #[builder(each="arg", default = "Default::default()")]
     args: Vec<String>,
-    #[builder(each="env", default = "vec![]")]
+    #[builder(each="env", default = "vec![\"RUST_LOG=info\".into()]")]
     env: Vec<String>,
     current_dir: Option<String>,
 }
@@ -19,7 +19,7 @@ fn main() {
         .env("RUST_LOG=info")
         // .args(vec!["-c".into(), "-vvv".into()])
         // .env(vec![])
-        // .current_dir("/home/yanlien/Program/Rust/proc_macros")
+        .current_dir("/home/yanlien/Program/Rust/proc_macros")
         .finish()
         .unwrap();
 
